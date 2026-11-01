@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Câmera Cintilante - Compatível Canon Selphy</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color, #0b021a);
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: background 0.5s ease;
+        }
+
+        body.theme-neon {
+            --bg-color: #0b021a;
+            --primary: #ff00aa;
+            --secondary: #00ffff;
+            --accent: #ffea00;
+            --card-bg: #150530;
+        }
+
+        body.theme-gold {
+            --bg-color: #120e04;
+            --primary: #ffd700;
+            --secondary: #ff8c00;
+            --accent: #ffffff;
+            --card-bg: #211906;
+        }
+
+        body.theme-purple {
+            --bg-color: #10061c;
+            --primary: #b000ff;
+            --secondary: #00ffcc;
+            --accent: #ff66b2;
+            --card-bg: #1c0d30;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-color);
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .fullscreen-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--secondary);
+            color: #fff;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 10px var(--secondary);
+            transition: transform 0.2s;
+        }
+
+        .fullscreen-btn:hover {
+            transform: scale(1.1);
+        }
+
+        #home-screen {
+            background: radial-gradient(circle at center, var(--card-bg) 0%, var(--bg-color) 100%);
+            text-align: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #home-screen h1 {
+            font-size: 2.6rem;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 0 0 10px var(--primary), 0 0 25px var(--secondary);
+            animation: title-glow 2s infinite alternate;
+            letter-spacing: 2px;
+        }
+
+        @keyframes title-glow {
+            from { text-shadow: 0 0 10px var(--primary), 0 0 20px var(--secondary); }
+            to { text-shadow: 0 0 20px var(--accent), 0 0 40px var(--primary); }
+        }
+
+        #home-screen p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: var(--secondary);
+            text-shadow: 0 0 8px var(--secondary);
+        }
+
+        .menu-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid var(--primary);
+            border-radius: 18px;
+            padding: 12px 20px;
+            margin-bottom: 15px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 0 15px rgba(255, 0, 170, 0.2);
+        }
+
+        .menu-section h3 {
+            font-size: 0.95rem;
+            color: var(--accent);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .options-grid {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .menu-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--secondary);
+            color: var(--secondary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: 0.3s;
+        }
+
+        .menu-btn.selected {
+            background: var(--secondary);
+            color: var(--bg-color);
+            box-shadow: 0 0 15px var(--secondary);
+        }
+
+        .color-picker-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        .color-picker-row label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            background: none;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: 2px solid #fff;
+            border-radius: 50%;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--bg-color);
+            border: 3px solid #ffffff;
+            padding: 14px 35px;
+            font-size: 1.2rem;
+            font-weight: 900;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--primary), 0 0 40px var(--secondary);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 5px;
+        }
+
+        .start-btn:active {
+            transform: scale(0.95);
+        }
+
+        #camera-screen {
+            background: #000;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            transform: scaleX(-1);
+        }
+
+        video.filter-glow { filter: saturate(1.4) brightness(1.1) drop-shadow(0 0 10px rgba(0,255,255,0.3)); }
+        video.filter-bw { filter: grayscale(100%) contrast(1.3); }
+        video.filter-neon { filter: hue-rotate(90deg) saturate(2); }
+
+        #sticker-stage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .active-sticker {
+            position: absolute;
+            font-size: 4.5rem;
+            cursor: grab;
+            pointer-events: auto;
+            transform: translate(-50%, -50%);
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+            touch-action: none;
+            padding: 15px;
+            animation: sparkle-sticker 1.5s infinite alternate;
+        }
+
+        @keyframes sparkle-sticker {
+            from { filter: drop-shadow(0 0 5px var(--secondary)); }
+            to { filter: drop-shadow(0 0 15px var(--primary)); }
+        }
+
+        .active-sticker:active {
+            cursor: grabbing;
+        }
+
+        .toggle-stickers-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 4;
+            background: rgba(11, 2, 26, 0.7);
+            border: 2px solid var(--primary);
+            color: #fff;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.4rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        .sticker-tray {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            z-index: 4;
+            background: var(--card-bg);
+            border: 2px solid var(--secondary);
+            padding: 12px;
+            border-radius: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 0 25px var(--secondary);
+            backdrop-filter: blur(8px);
+        }
+
+        .sticker-tray.show {
+            display: flex;
+        }
+
+        .sticker-option {
+            font-size: 2.2rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            transition: transform 0.2s;
+        }
+
+        .sticker-option:hover {
+            transform: scale(1.3);
+        }
+
+        .clear-stickers-btn {
+            background: rgba(255, 0, 100, 0.4);
+            border: 1px solid var(--primary);
+            color: #fff;
+            padding: 6px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            bottom: 35px;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+        }
+
+        .shutter-btn {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffffff 30%, var(--primary) 70%, var(--secondary) 100%);
+            border: 5px solid var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 25px var(--primary), 0 0 50px var(--secondary);
+            transition: transform 0.1s;
+        }
+
+        .shutter-btn:active {
+            transform: scale(0.9);
+        }
+
+        #countdown {
+            position: absolute;
+            font-size: 11rem;
+            font-weight: 900;
+            color: var(--accent);
+            text-shadow: 0 0 15px var(--primary), 0 0 40px var(--secondary);
+            z-index: 5;
+            display: none;
+            animation: pulse-count 0.8s infinite alternate;
+        }
+
+        @keyframes pulse-count {
+            from { transform: scale(1); filter: brightness(1); }
+            to { transform: scale(1.12); filter: brightness(1.4); }
+        }
+
+        #result-screen {
+            background: radial-gradient(circle at center, var(--card-bg) 0%, var(--bg-color) 100%);
+            padding: 20px;
+        }
+
+        .photo-strip {
+            background-color: var(--custom-bg, #150530);
+            border: 4px solid var(--custom-border, #ff00aa);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+
+        .grid-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid-container.single {
+            flex-direction: column;
+        }
+
+        .grid-container img {
+            width: 260px;
+            height: 195px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-btn {
+            padding: 14px 24px;
+            border: 2px solid;
+            border-radius: 15px;
+            font-weight: 900;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-retry { 
+            background: var(--card-bg); 
+            color: #fff; 
+            border-color: #ffffff;
+        }
+        
+        .btn-print { 
+            background: var(--card-bg); 
+            color: var(--secondary); 
+            border-color: var(--secondary);
+        }
+        
+        .btn-download { 
+            background: var(--card-bg); 
+            color: var(--primary); 
+            border-color: var(--primary);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            filter: brightness(1.3);
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-strip, #printable-strip * {
+                visibility: visible;
+            }
+            #printable-strip {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                box-shadow: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="theme-neon">
+
+    <button class="fullscreen-btn" onclick="toggleFullScreen()" title="Tela Cheia">⛶</button>
+
+    <!-- 1. TELA INICIAL / MENU INTERATIVO -->
+    <div id="home-screen" class="screen active">
+        <h1>✨ CÂMERA CINTILANTE ✨</h1>
+        <p>Personalize cores, bordas e divirta-se!</p>
+        
+        <div class="menu-section">
+            <h3>🎨 Tema da Interface</h3>
+            <div class="options-grid">
+                <button class="menu-btn selected" onclick="setTheme('neon', this)">Neon</button>
+                <button class="menu-btn" onclick="setTheme('gold', this)">Gold</button>
+                <button class="menu-btn" onclick="setTheme('purple', this)">Purple</button>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <h3>🖼️ Cores da Foto (Fundo e Borda)</h3>
+            <div class="color-picker-row">
+                <label>Fundo: <input type="color" id="bgColorPicker" value="#150530"></label>
+                <label>Borda: <input type="color" id="borderColorPicker" value="#ff00aa"></label>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <h3>📸 Formato de Fotos</h3>
+            <div class="options-grid">
+                <button class="menu-btn selected" onclick="setMode(1, this)">1 Foto</button>
+                <button class="menu-btn" onclick="setMode(2, this)">2 Fotos (Grade)</button>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <h3>✨ Filtro Visual</h3>
+            <div class="options-grid">
+                <button class="menu-btn selected" onclick="setFilter('glow', this)">Brilho Glow</button>
+                <button class="menu-btn" onclick="setFilter('bw', this)">Preto & Branco</button>
+                <button class="menu-btn" onclick="setFilter('neon', this)">Neon Extremo</button>
+            </div>
+        </div>
+
+        <button class="start-btn" onclick="startCamera()">Ligar Câmera</button>
+    </div>
+
+    <!-- 2. TELA DA CÂMERA -->
+    <div id="camera-screen" class="screen">
+        <div class="camera-container" id="camera-container">
+            <video id="video" class="filter-glow" autoplay playsinline muted></video>
+            
+            <button class="toggle-stickers-btn" onclick="toggleStickerTray()" title="Adesivos">✨</button>
+            
+            <div class="sticker-tray" id="sticker-tray">
+                <button class="sticker-option" onclick="addSticker('🌟')">🌟</button>
+                <button class="sticker-option" onclick="addSticker('💖')">💖</button>
+                <button class="sticker-option" onclick="addSticker('💎')">💎</button>
+                <button class="sticker-option" onclick="addSticker('👑')">👑</button>
+                <button class="sticker-option" onclick="addSticker('🔥')">🔥</button>
+                <button class="sticker-option" onclick="addSticker('🦄')">🦄</button>
+                <button class="sticker-option" onclick="addSticker('💫')">💫</button>
+                <button class="clear-stickers-btn" onclick="clearStickers()">Limpar</button>
+            </div>
+
+            <div id="sticker-stage"></div>
+            <div id="countdown">3</div>
+
+            <div class="camera-overlay">
+                <button class="shutter-btn" onclick="triggerCaptureSequence()" title="Tirar Foto"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. TELA DE RESULTADO (100% Limpa e Centralizada) -->
+    <div id="result-screen" class="screen">
+        <div class="photo-strip" id="printable-strip">
+            <div id="grid-preview" class="grid-container"></div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="action-btn btn-retry" onclick="retakePhotos()">🔄 Tirar de Novo</button>
+            <button class="action-btn btn-print" onclick="window.print()">🖨️ Imprimir</button>
+            <button class="action-btn btn-download" onclick="downloadStrip()">💾 Baixar</button>
+        </div>
+    </div>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        let video = document.getElementById('video');
+        let canvas = document.getElementById('canvas');
+        let stream = null;
+        let photoCountMode = 1;
+        let currentFilter = 'glow';
+        let capturedPhotos = [];
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log("Erro ao ativar tela cheia:", err.message);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        function setTheme(themeName, btn) {
+            document.body.className = `theme-${themeName}`;
+            btn.parentElement.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        function setMode(num, btn) {
+            photoCountMode = num;
+            btn.parentElement.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        function setFilter(filterName, btn) {
+            currentFilter = filterName;
+            video.className = `filter-${filterName}`;
+            btn.parentElement.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        async function startCamera() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('camera-screen').classList.add('active');
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                alert("Erro ao acessar a câmera. Verifique as permissões do navegador.");
+                resetAppToHome();
+            }
+        }
+
+        function retakePhotos() {
+            capturedPhotos = [];
+            clearStickers();
+            startCamera();
+        }
+
+        function toggleStickerTray() {
+            document.getElementById('sticker-tray').classList.toggle('show');
+        }
+
+        function addSticker(emoji) {
+            const stage = document.getElementById('sticker-stage');
+            const el = document.createElement('div');
+            el.className = 'active-sticker';
+            el.innerText = emoji;
+            el.style.left = '50%';
+            el.style.top = '50%';
+            makeDraggable(el);
+            stage.appendChild(el);
+            toggleStickerTray();
+        }
+
+        function clearStickers() {
+            document.getElementById('sticker-stage').innerHTML = '';
+        }
+
+        function makeDraggable(element) {
+            let startX = 0, startY = 0;
+
+            element.onmousedown = dragMouseDown;
+            element.ontouchstart = dragTouchStart;
+
+            function dragMouseDown(e) {
+                e.preventDefault();
+                startX = e.clientX - element.offsetLeft;
+                startY = e.clientY - element.offsetTop;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                element.style.left = (e.clientX - startX) + "px";
+                element.style.top = (e.clientY - startY) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+
+            function dragTouchStart(e) {
+                if(e.touches.length === 1) {
+                    startX = e.touches[0].clientX - element.offsetLeft;
+                    startY = e.touches[0].clientY - element.offsetTop;
+                    document.ontouchend = closeTouchElement;
+                    document.ontouchmove = elementTouchDrag;
+                }
+            }
+
+            function elementTouchDrag(e) {
+                if(e.touches.length === 1) {
+                    element.style.left = (e.touches[0].clientX - startX) + "px";
+                    element.style.top = (e.touches[0].clientY - startY) + "px";
+                }
+            }
+
+            function closeTouchElement() {
+                document.ontouchend = null;
+                document.ontouchmove = null;
+            }
+        }
+
+        async function triggerCaptureSequence() {
+            capturedPhotos = [];
+            const countdownEl = document.getElementById('countdown');
+            
+            for (let i = 0; i < photoCountMode; i++) {
+                countdownEl.style.display = 'block';
+                for (let c = 3; c > 0; c--) {
+                    countdownEl.innerText = c;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                countdownEl.style.display = 'none';
+
+                await capturePhotoWithStickers();
+
+                if (i < photoCountMode - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                }
+            }
+
+            stopCameraStream();
+            showResultScreen();
+        }
+
+        async function capturePhotoWithStickers() {
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            let ctx = canvas.getContext('2d');
+            
+            if (currentFilter === 'bw') {
+                ctx.filter = 'grayscale(100%) contrast(1.3)';
+            } else if (currentFilter === 'neon') {
+                ctx.filter = 'hue-rotate(90deg) saturate(2)';
+            } else {
+                ctx.filter = 'saturate(1.4) brightness(1.1)';
+            }
+
+            ctx.save();
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.restore();
+
+            ctx.filter = 'none';
+
+            const container = document.getElementById('camera-container');
+            const cRect = container.getBoundingClientRect();
+            const stickers = document.querySelectorAll('.active-sticker');
+
+            stickers.forEach(stk => {
+                const sRect = stk.getBoundingClientRect();
+                let relX = (sRect.left + sRect.width / 2 - cRect.left) / cRect.width;
+                let relY = (sRect.top + sRect.height / 2 - cRect.top) / cRect.height;
+
+                let canvasX = relX * canvas.width;
+                let canvasY = relY * canvas.height;
+
+                ctx.font = `${Math.round(canvas.height * 0.12)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(stk.innerText, canvasX, canvasY);
+            });
+
+            capturedPhotos.push(canvas.toDataURL('image/png'));
+        }
+
+        function stopCameraStream() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        function showResultScreen() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('result-screen').classList.add('active');
+
+            let customBg = document.getElementById('bgColorPicker').value;
+            let customBorder = document.getElementById('borderColorPicker').value;
+            let strip = document.getElementById('printable-strip');
+            
+            strip.style.setProperty('--custom-bg', customBg);
+            strip.style.setProperty('--custom-border', customBorder);
+
+            let gridPreview = document.getElementById('grid-preview');
+            gridPreview.innerHTML = '';
+            gridPreview.className = `grid-container ${photoCountMode === 1 ? 'single' : ''}`;
+
+            capturedPhotos.forEach(src => {
+                let img = document.createElement('img');
+                img.src = src;
+                gridPreview.appendChild(img);
+            });
+        }
+
+        function resetAppToHome() {
+            stopCameraStream();
+            capturedPhotos = [];
+            clearStickers();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('home-screen').classList.add('active');
+        }
+
+        // Função otimizada para alinhar e centralizar perfeitamente na proporção da Canon Selphy
+        async function downloadStrip() {
+            let downloadCanvas = document.createElement('canvas');
+            let ctx = downloadCanvas.getContext('2d');
+            
+            let imgElements = document.querySelectorAll('#grid-preview img');
+            if (imgElements.length === 0) return;
+
+            let imgWidth = 1200; // Largura proporcional de alta resolução para impressão
+            let imgHeight = 900;  // Proporção 4:3 limpa
+            let padding = 60;     // Margens laterais perfeitamente equilibradas
+            let gap = 40;         // Espaço simétrico entre a 1ª e a 2ª foto
+
+            let customBg = document.getElementById('bgColorPicker').value;
+            let customBorder = document.getElementById('borderColorPicker').value;
+
+            downloadCanvas.width = imgWidth + (padding * 2);
+            downloadCanvas.height = (imgHeight * imgElements.length) + (gap * (imgElements.length - 1)) + (padding * 2);
+
+            // Preenche o fundo com a cor escolhida
+            ctx.fillStyle = customBg;
+            ctx.fillRect(0, 0, downloadCanvas.width, downloadCanvas.height);
+
+            // Desenha a moldura externa simétrica alinhada
+            ctx.strokeStyle = customBorder;
+            ctx.lineWidth = 16;
+            ctx.strokeRect(8, 8, downloadCanvas.width - 16, downloadCanvas.height - 16);
+
+            // Desenha cada foto rigorosamente centralizada
+            let currentY = padding;
+            for (let imgEl of imgElements) {
+                let img = new Image();
+                img.src = imgEl.src;
+                await new Promise(resolve => { img.onload = resolve; });
+                ctx.drawImage(img, padding, currentY, imgWidth, imgHeight);
+                currentY += imgHeight + gap;
+            }
+
+            let link = document.createElement('a');
+            link.download = `selphy-grid-${Date.now()}.png`;
+            link.href = downloadCanvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>
